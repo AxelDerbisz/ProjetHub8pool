@@ -1,0 +1,57 @@
+# Nom du workflow
+name: Deploy Backend to Cloud Run
+
+# Déclencheur :
+# S'exécute à chaque 'push' sur la branche 'main'
+# SI des fichiers ont changé dans le dossier 'backend/'
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'backend/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+    # 1. Récupère votre code
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 2. S'authentifie à Google Cloud (utilise vos Secrets)
+    - id: 'auth'
+      name: Authenticate to Google Cloud
+      uses: 'google-github-actions/auth@v2'
+      with:
+        workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+    # 3. Configure le GCloud CLI
+    - name: Set up Cloud SDK
+      uses: 'google-github-actions/setup-gcloud@v2'
+
+    # 4. Configure Docker pour parler à Artifact Registry
+    - name: Configure Docker
+      run: gcloud auth configure-docker europe-west1-docker.pkg.dev
+
+    # 5. Construit et Pousse l'image (votre commande)
+    - name: Build and Push Docker Image
+      run: |
+        docker buildx build --push \
+          -t europe-west1-docker.pkg.dev/hubproject-15527/leborat-api/leborat-api:latest \
+          ./backend
+      # Note: On ajoute ./backend pour dire à Docker où est le Dockerfile
+
+    # 6. Déploie sur Cloud Run (votre commande)
+    - name: Deploy to Cloud Run
+      run: |
+        gcloud run deploy ledorat-api \
+          --image europe-west1-docker.pkg.dev/hubproject-15527/leborat-api/leborat-api:latest \
+          --region europe-west1 \
+          --allow-unauthenticated \
+          --quiet
+      # --allow-unauthenticated et --quiet permettent de sauter les questions
