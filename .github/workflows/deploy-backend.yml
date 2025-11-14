@@ -6,9 +6,9 @@ name: Deploy Backend to Cloud Run
 # SI des fichiers ont changé dans le dossier 'backend/'
 on:
   push:
-    branches: [ "main" ]
-    #paths:
-      #- 'backend/**'
+    branches: [ "master" ]
+    paths:
+      - 'backend/**'
 
 jobs:
   deploy:
