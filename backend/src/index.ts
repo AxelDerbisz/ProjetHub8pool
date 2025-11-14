@@ -10,6 +10,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+//testCI
+
 app.get('/api/public', (req, res) => {
   res.send('Ceci est une route PUBLIQUE.');
 });
