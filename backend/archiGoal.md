@@ -1,6 +1,6 @@
 src/
 ├─ controllers/
-│  ├─ userController.ts
+│  ├─ UserController.ts
 │  └─ poolController.ts
 ├─ useCases/
    ├─ User/
@@ -10,8 +10,8 @@ src/
 │     ├─ createPool.ts
 │     └─ updatePool.ts
 ├─ repositories/
-│  ├─ userRepository.ts
-│  └─ poolRepository.ts
+│  ├─ UserRepository.ts
+│  └─ PoolRepository.ts
 ├─ entities/
 │  ├─ User.ts
 │  └─ Pool.ts

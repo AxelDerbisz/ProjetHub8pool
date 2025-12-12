@@ -1,7 +1,7 @@
 import type {Reservation} from "./Reservation.js";
 
 export interface User {
-    id: number;
+    id: string;
     firstName: string;
     lastName: string;
     email: string;

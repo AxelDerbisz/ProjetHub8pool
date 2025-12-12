@@ -1,21 +1,35 @@
-import {db} from "../Infrastructure/config/firebase-admin.js";
-import type {User} from "../Entities/User.js";
+import { db } from "../Infrastructure/config/firebase-admin.js";
+import type { User } from "../Entities/User.js";
 
+/**
+ * Génère un ID unique pour un nouvel utilisateur
+ */
+export async function GenerateIdAsync(): Promise<string> {
+    const newDocRef = db.collection("users").doc();
+    return newDocRef.id;
+}
+
+/**
+ * Crée un nouvel utilisateur dans la base de données
+ */
 export async function CreateUserAsync(user: User): Promise<void> {
-    if (!user || typeof user.id === "undefined") {
+    if (!user || !user.id || user.id.trim() === "") {
         throw new Error("L'utilisateur doit avoir un id valide.");
     }
 
     const userObj = JSON.parse(JSON.stringify(user));
-    const userRef = db.collection("users").doc(String(user.id));
+    const userRef = db.collection("users").doc(user.id);
 
     await userRef.set(userObj);
 
     console.log(`User ${user.id} créé en DB.`);
 }
 
-export async function GetByIdAsync(id: string | number): Promise<User | null> {
-    const userRef = db.collection("users").doc(String(id));
+/**
+ * Récupère un utilisateur par son ID
+ */
+export async function GetByIdAsync(id: string): Promise<User | null> {
+    const userRef = db.collection("users").doc(id);
     const doc = await userRef.get();
 
     if (!doc.exists) {
@@ -26,6 +40,9 @@ export async function GetByIdAsync(id: string | number): Promise<User | null> {
     return doc.data() as User;
 }
 
+/**
+ * Récupère tous les utilisateurs
+ */
 export async function GetAllAsync(): Promise<User[]> {
     const usersSnapshot = await db.collection("users").get();
     const users: User[] = [];
@@ -38,8 +55,11 @@ export async function GetAllAsync(): Promise<User[]> {
     return users;
 }
 
-export async function UpdateByIdAsync(id: string | number, updates: Partial<User>): Promise<boolean> {
-    const userRef = db.collection("users").doc(String(id));
+/**
+ * Met à jour un utilisateur par son ID
+ */
+export async function UpdateByIdAsync(id: string, updates: Partial<User>): Promise<boolean> {
+    const userRef = db.collection("users").doc(id);
     const doc = await userRef.get();
 
     if (!doc.exists) {
@@ -54,8 +74,11 @@ export async function UpdateByIdAsync(id: string | number, updates: Partial<User
     return true;
 }
 
-export async function DeleteByIdAsync(id: string | number): Promise<boolean> {
-    const userRef = db.collection("users").doc(String(id));
+/**
+ * Supprime un utilisateur par son ID
+ */
+export async function DeleteByIdAsync(id: string): Promise<boolean> {
+    const userRef = db.collection("users").doc(id);
     const doc = await userRef.get();
 
     if (!doc.exists) {
@@ -69,13 +92,19 @@ export async function DeleteByIdAsync(id: string | number): Promise<boolean> {
     return true;
 }
 
-export async function ExistsAsync(id: string | number): Promise<boolean> {
-    const userRef = db.collection("users").doc(String(id));
+/**
+ * Vérifie si un utilisateur existe
+ */
+export async function ExistsAsync(id: string): Promise<boolean> {
+    const userRef = db.collection("users").doc(id);
     const doc = await userRef.get();
 
     return doc.exists;
 }
 
+/**
+ * Récupère un utilisateur par son email
+ */
 export async function GetByEmailAsync(email: string): Promise<User | null> {
     const usersSnapshot = await db.collection("users")
         .where("email", "==", email)
@@ -90,6 +119,9 @@ export async function GetByEmailAsync(email: string): Promise<User | null> {
     return usersSnapshot.docs[0]?.data() as User;
 }
 
+/**
+ * Récupère un utilisateur par son numéro de téléphone
+ */
 export async function GetByPhoneNumberAsync(phoneNumber: string): Promise<User | null> {
     const usersSnapshot = await db.collection("users")
         .where("phoneNumber", "==", phoneNumber)
@@ -104,6 +136,9 @@ export async function GetByPhoneNumberAsync(phoneNumber: string): Promise<User |
     return usersSnapshot.docs[0]?.data() as User;
 }
 
+/**
+ * Récupère tous les administrateurs
+ */
 export async function GetAdminsAsync(): Promise<User[]> {
     const usersSnapshot = await db.collection("users")
         .where("isAdmin", "==", true)
@@ -119,6 +154,9 @@ export async function GetAdminsAsync(): Promise<User[]> {
     return users;
 }
 
+/**
+ * Récupère tous les utilisateurs actifs
+ */
 export async function GetActiveUsersAsync(): Promise<User[]> {
     const usersSnapshot = await db.collection("users")
         .where("isActive", "==", true)
@@ -134,6 +172,9 @@ export async function GetActiveUsersAsync(): Promise<User[]> {
     return users;
 }
 
+/**
+ * Récupère tous les utilisateurs inactifs
+ */
 export async function GetInactiveUsersAsync(): Promise<User[]> {
     const usersSnapshot = await db.collection("users")
         .where("isActive", "==", false)
@@ -149,6 +190,9 @@ export async function GetInactiveUsersAsync(): Promise<User[]> {
     return users;
 }
 
+/**
+ * Récupère les utilisateurs qui n'ont pas accepté les conditions
+ */
 export async function GetUsersWithoutAcceptedTermsAsync(): Promise<User[]> {
     const usersSnapshot = await db.collection("users")
         .where("hasAcceptedTerms", "==", false)
@@ -164,7 +208,36 @@ export async function GetUsersWithoutAcceptedTermsAsync(): Promise<User[]> {
     return users;
 }
 
-export async function ToggleActiveStatusAsync(id: number): Promise<boolean> {
+/**
+ * Active un utilisateur
+ */
+export async function ActivateUserAsync(id: string): Promise<boolean> {
+    const result = await UpdateByIdAsync(id, { isActive: true });
+
+    if (result) {
+        console.log(`Utilisateur ${id} activé.`);
+    }
+
+    return result;
+}
+
+/**
+ * Désactive un utilisateur
+ */
+export async function DeactivateUserAsync(id: string): Promise<boolean> {
+    const result = await UpdateByIdAsync(id, { isActive: false });
+
+    if (result) {
+        console.log(`Utilisateur ${id} désactivé.`);
+    }
+
+    return result;
+}
+
+/**
+ * Bascule le statut actif/inactif d'un utilisateur
+ */
+export async function ToggleActiveStatusAsync(id: string): Promise<boolean> {
     const user = await GetByIdAsync(id);
 
     if (!user) {
@@ -175,19 +248,36 @@ export async function ToggleActiveStatusAsync(id: number): Promise<boolean> {
     return await UpdateByIdAsync(id, { isActive: !user.isActive });
 }
 
-export async function PromoteOrDemoteToAdminAsync(id: number, isAdmin: boolean): Promise<boolean> {
-    const result = await UpdateByIdAsync(id, { isAdmin: isAdmin });
+/**
+ * Promouvoir un utilisateur en administrateur
+ */
+export async function PromoteToAdminAsync(id: string): Promise<boolean> {
+    const result = await UpdateByIdAsync(id, { isAdmin: true });
 
-    if (result && isAdmin) {
+    if (result) {
         console.log(`Utilisateur ${id} promu administrateur.`);
-    } else if (result) {
-        console.log(`Utilisateur ${id} à était dé promu.`);
     }
 
     return result;
 }
 
-export async function AcceptTermsAsync(id: number): Promise<boolean> {
+/**
+ * Rétrograder un administrateur en utilisateur normal
+ */
+export async function DemoteFromAdminAsync(id: string): Promise<boolean> {
+    const result = await UpdateByIdAsync(id, { isAdmin: false });
+
+    if (result) {
+        console.log(`Utilisateur ${id} rétrogradé en utilisateur normal.`);
+    }
+
+    return result;
+}
+
+/**
+ * Marque qu'un utilisateur a accepté les conditions
+ */
+export async function AcceptTermsAsync(id: string): Promise<boolean> {
     const result = await UpdateByIdAsync(id, { hasAcceptedTerms: true });
 
     if (result) {
@@ -197,7 +287,11 @@ export async function AcceptTermsAsync(id: number): Promise<boolean> {
     return result;
 }
 
-export async function UpdateEmailAsync(id: number, newEmail: string): Promise<boolean> {
+/**
+ * Met à jour l'email d'un utilisateur
+ */
+export async function UpdateEmailAsync(id: string, newEmail: string): Promise<boolean> {
+    // Vérifier si l'email n'est pas déjà utilisé
     const existingUser = await GetByEmailAsync(newEmail);
 
     if (existingUser && existingUser.id !== id) {
@@ -208,10 +302,16 @@ export async function UpdateEmailAsync(id: number, newEmail: string): Promise<bo
     return await UpdateByIdAsync(id, { email: newEmail });
 }
 
-export async function UpdatePhoneNumberAsync(id: number, newPhoneNumber: string): Promise<boolean> {
+/**
+ * Met à jour le numéro de téléphone d'un utilisateur
+ */
+export async function UpdatePhoneNumberAsync(id: string, newPhoneNumber: string): Promise<boolean> {
     return await UpdateByIdAsync(id, { phoneNumber: newPhoneNumber });
 }
 
+/**
+ * Recherche des utilisateurs par nom ou prénom (recherche partielle)
+ */
 export async function SearchByNameAsync(searchTerm: string): Promise<User[]> {
     const allUsers = await GetAllAsync();
     const searchLower = searchTerm.toLowerCase();
@@ -226,11 +326,17 @@ export async function SearchByNameAsync(searchTerm: string): Promise<User[]> {
     return filteredUsers;
 }
 
+/**
+ * Compte le nombre total d'utilisateurs
+ */
 export async function CountAsync(): Promise<number> {
     const usersSnapshot = await db.collection("users").get();
     return usersSnapshot.size;
 }
 
+/**
+ * Compte le nombre d'administrateurs
+ */
 export async function CountAdminsAsync(): Promise<number> {
     const usersSnapshot = await db.collection("users")
         .where("isAdmin", "==", true)
@@ -238,6 +344,9 @@ export async function CountAdminsAsync(): Promise<number> {
     return usersSnapshot.size;
 }
 
+/**
+ * Compte le nombre d'utilisateurs actifs
+ */
 export async function CountActiveUsersAsync(): Promise<number> {
     const usersSnapshot = await db.collection("users")
         .where("isActive", "==", true)
@@ -245,6 +354,9 @@ export async function CountActiveUsersAsync(): Promise<number> {
     return usersSnapshot.size;
 }
 
+/**
+ * Récupère des utilisateurs avec un filtre personnalisé
+ */
 export async function GetByFilterAsync(field: string, operator: FirebaseFirestore.WhereFilterOp, value: any): Promise<User[]> {
     const usersSnapshot = await db.collection("users")
         .where(field, operator, value)
