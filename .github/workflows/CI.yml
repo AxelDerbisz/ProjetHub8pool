@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Load .env (optional)
+        uses: mikeal/publish-to-github-action@v2
+        if: false
+
+      - name: Build project
+        run: npm run build
+
+      - name: Test server start
+        run: |
+          npm install -g wait-on
+          # Démarrer le serveur en arrière-plan
+          PORT=3001 node dist/index.js &
+          # Attendre 3 secondes pour que le serveur démarre
+          sleep 3
+          # Vérifier qu'il répond (ex: /api/me route)
+          curl -f http://localhost:3001/ || exit 1
