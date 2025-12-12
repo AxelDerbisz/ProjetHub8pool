@@ -2,11 +2,13 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "master" ]
+    paths:
+      - 'backend/**'
   pull_request:
-    branches:
-      - main
+    branches: [ "master" ]
+    paths:
+      - 'backend/**'
 
 jobs:
   build-and-test:
